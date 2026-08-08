@@ -1,0 +1,20 @@
+# python
+__pycache__/
+*.pyc
+
+# nested reference repositories (own git histories, available upstream)
+refer/Deep_Learning_CPMG_Analysis/repo/
+refer/old/
+
+# regenerable artifacts (GB-scale): per-window classifier banks & synthetic training data
+results/ablation/bank_*/
+results/benchmark_v2/bank_*/
+results/hpc/*.pt
+results/train_data/
+
+# downloaded archives (extracted contents are tracked)
+dataset/delft_public/50spin.zip
+dataset/delft_public/4TU_server.zip
+
+# run logs
+results/*.log

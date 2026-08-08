@@ -1,0 +1,74 @@
+{
+  "A_cryo": {
+    "2021": {
+      "precision": 1.0,
+      "recall": 0.231,
+      "f1": 0.376,
+      "mean_err_khz": 1.27,
+      "tp": 25,
+      "fp": 0,
+      "fn": 83,
+      "gt_per_dataset": 27,
+      "mean_val_acc": 0.726
+    },
+    "cdetect_de": {
+      "precision": 1.0,
+      "recall": 0.556,
+      "f1": 0.714,
+      "mean_err_khz": 0.6,
+      "tp": 60,
+      "fp": 0,
+      "fn": 48,
+      "gt_per_dataset": 27,
+      "mean_k": 15.0
+    }
+  },
+  "B_room": {
+    "2021": {
+      "precision": 0.776,
+      "recall": 0.241,
+      "f1": 0.367,
+      "mean_err_khz": 2.39,
+      "tp": 52,
+      "fp": 15,
+      "fn": 164,
+      "gt_per_dataset": 27,
+      "mean_val_acc": 0.599
+    },
+    "cdetect_de": {
+      "precision": 1.0,
+      "recall": 0.333,
+      "f1": 0.5,
+      "mean_err_khz": 2.04,
+      "tp": 72,
+      "fp": 0,
+      "fn": 144,
+      "gt_per_dataset": 27,
+      "mean_k": 9.0
+    }
+  },
+  "C_mismatch": {
+    "2021": {
+      "precision": 0.631,
+      "recall": 0.245,
+      "f1": 0.353,
+      "mean_err_khz": 2.24,
+      "tp": 53,
+      "fp": 31,
+      "fn": 163,
+      "gt_per_dataset": 27,
+      "mean_val_acc": 0.601
+    },
+    "cdetect_de": {
+      "precision": 0.887,
+      "recall": 0.329,
+      "f1": 0.48,
+      "mean_err_khz": 2.7,
+      "tp": 71,
+      "fp": 9,
+      "fn": 145,
+      "gt_per_dataset": 27,
+      "mean_k": 10.0
+    }
+  }
+}

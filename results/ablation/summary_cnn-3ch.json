@@ -1,0 +1,50 @@
+{
+  "config": "cnn-3ch",
+  "arch": "cnn",
+  "n_pulses": [
+    8,
+    16,
+    20
+  ],
+  "denoise": null,
+  "mean_val_acc": 0.742,
+  "per_sigma": {
+    "0.03": {
+      "tp": 57,
+      "fp": 1,
+      "fn": 4,
+      "precision": 0.983,
+      "recall": 0.934,
+      "f1": 0.958,
+      "mean_err_khz": 1.05
+    },
+    "0.05": {
+      "tp": 57,
+      "fp": 5,
+      "fn": 7,
+      "precision": 0.919,
+      "recall": 0.891,
+      "f1": 0.905,
+      "mean_err_khz": 1.09
+    },
+    "0.08": {
+      "tp": 52,
+      "fp": 15,
+      "fn": 5,
+      "precision": 0.776,
+      "recall": 0.912,
+      "f1": 0.839,
+      "mean_err_khz": 1.06
+    },
+    "0.12": {
+      "tp": 51,
+      "fp": 31,
+      "fn": 7,
+      "precision": 0.622,
+      "recall": 0.879,
+      "f1": 0.729,
+      "mean_err_khz": 1.1
+    }
+  },
+  "train_plus_eval_s": 236.1
+}

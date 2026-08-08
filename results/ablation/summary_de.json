@@ -1,0 +1,42 @@
+{
+  "config": "de-greedy",
+  "per_sigma": {
+    "0.03": {
+      "tp": 61,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "mean_err_khz": 0.15
+    },
+    "0.05": {
+      "tp": 64,
+      "fp": 1,
+      "fn": 0,
+      "precision": 0.985,
+      "recall": 1.0,
+      "f1": 0.992,
+      "mean_err_khz": 0.27
+    },
+    "0.08": {
+      "tp": 51,
+      "fp": 0,
+      "fn": 6,
+      "precision": 1.0,
+      "recall": 0.895,
+      "f1": 0.944,
+      "mean_err_khz": 0.31
+    },
+    "0.12": {
+      "tp": 50,
+      "fp": 0,
+      "fn": 8,
+      "precision": 1.0,
+      "recall": 0.862,
+      "f1": 0.926,
+      "mean_err_khz": 0.58
+    }
+  },
+  "train_plus_eval_s": 83.8
+}

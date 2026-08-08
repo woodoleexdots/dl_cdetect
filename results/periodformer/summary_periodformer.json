@@ -1,0 +1,42 @@
+{
+  "config": "periodformer",
+  "params_m": 1.12,
+  "per_sigma": {
+    "0.03": {
+      "tp": 61,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "mean_err_khz": 0.57
+    },
+    "0.05": {
+      "tp": 63,
+      "fp": 0,
+      "fn": 1,
+      "precision": 1.0,
+      "recall": 0.984,
+      "f1": 0.992,
+      "mean_err_khz": 0.62
+    },
+    "0.08": {
+      "tp": 51,
+      "fp": 0,
+      "fn": 6,
+      "precision": 1.0,
+      "recall": 0.895,
+      "f1": 0.944,
+      "mean_err_khz": 0.59
+    },
+    "0.12": {
+      "tp": 47,
+      "fp": 0,
+      "fn": 11,
+      "precision": 1.0,
+      "recall": 0.81,
+      "f1": 0.895,
+      "mean_err_khz": 0.79
+    }
+  }
+}

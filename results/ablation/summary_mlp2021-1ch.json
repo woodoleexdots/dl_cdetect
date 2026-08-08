@@ -1,0 +1,48 @@
+{
+  "config": "mlp2021-1ch",
+  "arch": "mlp2021",
+  "n_pulses": [
+    16
+  ],
+  "denoise": null,
+  "mean_val_acc": 0.63,
+  "per_sigma": {
+    "0.03": {
+      "tp": 49,
+      "fp": 25,
+      "fn": 12,
+      "precision": 0.662,
+      "recall": 0.803,
+      "f1": 0.726,
+      "mean_err_khz": 1.38
+    },
+    "0.05": {
+      "tp": 58,
+      "fp": 28,
+      "fn": 6,
+      "precision": 0.674,
+      "recall": 0.906,
+      "f1": 0.773,
+      "mean_err_khz": 1.25
+    },
+    "0.08": {
+      "tp": 52,
+      "fp": 43,
+      "fn": 5,
+      "precision": 0.547,
+      "recall": 0.912,
+      "f1": 0.684,
+      "mean_err_khz": 1.34
+    },
+    "0.12": {
+      "tp": 48,
+      "fp": 70,
+      "fn": 10,
+      "precision": 0.407,
+      "recall": 0.828,
+      "f1": 0.545,
+      "mean_err_khz": 1.21
+    }
+  },
+  "train_plus_eval_s": 88.4
+}

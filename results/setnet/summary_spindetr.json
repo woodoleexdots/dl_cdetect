@@ -1,0 +1,42 @@
+{
+  "config": "spindetr",
+  "params_m": 1.91,
+  "per_sigma": {
+    "0.03": {
+      "tp": 61,
+      "fp": 8,
+      "fn": 0,
+      "precision": 0.884,
+      "recall": 1.0,
+      "f1": 0.938,
+      "mean_err_khz": 0.45
+    },
+    "0.05": {
+      "tp": 63,
+      "fp": 10,
+      "fn": 1,
+      "precision": 0.863,
+      "recall": 0.984,
+      "f1": 0.92,
+      "mean_err_khz": 0.5
+    },
+    "0.08": {
+      "tp": 52,
+      "fp": 9,
+      "fn": 5,
+      "precision": 0.852,
+      "recall": 0.912,
+      "f1": 0.881,
+      "mean_err_khz": 0.61
+    },
+    "0.12": {
+      "tp": 53,
+      "fp": 16,
+      "fn": 5,
+      "precision": 0.768,
+      "recall": 0.914,
+      "f1": 0.835,
+      "mean_err_khz": 1.01
+    }
+  }
+}
