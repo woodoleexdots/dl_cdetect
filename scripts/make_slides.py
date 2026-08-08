@@ -1,7 +1,7 @@
 """3-slide PPTX: model, model comparison, validation results.
 
 Assets are drawn with matplotlib into results/slides_assets/, then a 16:9
-deck is assembled at results/NV_C13_hybrid_3slides.pptx.
+deck is assembled at results/NV_C13_hybrid_slides.pptx.
 """
 
 from __future__ import annotations
@@ -154,6 +154,160 @@ def asset_f1_bars():
     plt.close(fig)
 
 
+
+
+def asset_steps():
+    """Project timeline: 7 steps, snake layout."""
+    fig, ax = plt.subplots(figsize=(12.4, 5.2))
+    ax.set_xlim(0, 1); ax.set_ylim(0, 1); ax.axis("off")
+    steps = [
+        ("1. EDA · 물리 검증", "실측 딥 간격 1.060 µs =\n이론 TP 1.061 µs\n→ forward model 확정"),
+        ("2. 2021 재구성", "MLP 윈도우뱅크 + AE 디노이저\n논문 코드 분석 후\n우리 조건으로 재학습"),
+        ("3. Ablation 스터디", "아키텍처·채널·디노이저 분해\n상온 F1 0.57 → 0.94\n(AE 디노이저는 유해 판명)"),
+        ("4. 신규 아키텍처", "SpinDETR (raw→set 예측)\nPeriodFormer (토큰+어텐션)\n합성 장면으로만 학습"),
+        ("5. PF→DE 하이브리드", "PF 후보영역(오탐 0)\n+ 영역제약 DE(BIC 열거)\n= 전 조건 1위"),
+        ("6. 실측 GT 검증", "Delft 50-스핀 공개데이터\n디지털 트윈 3개 암\n(저온/상온/모델불일치)"),
+        ("7. 실데이터 확정", "NV1 14스핀 · NV2 10스핀\n앵커 7/7 회수\nRMSE 0.088–0.286"),
+    ]
+    pos = [(0.01, 0.62), (0.26, 0.62), (0.51, 0.62), (0.76, 0.62),
+           (0.76, 0.12), (0.51, 0.12), (0.26, 0.12)]
+    w, h = 0.215, 0.33
+    for (title, body), (x, y) in zip(steps, pos):
+        ax.add_patch(FancyBboxPatch((x, y), w, h, boxstyle="round,pad=0.012",
+                                    fc="#eef3fb", ec="0.35", lw=1.2))
+        ax.text(x + w/2, y + h - 0.055, title, ha="center", va="center",
+                fontsize=12, weight="bold")
+        ax.text(x + w/2, y + h/2 - 0.045, body, ha="center", va="center",
+                fontsize=9, color="0.25")
+    for i in range(len(pos) - 1):
+        x1, y1 = pos[i]; x2, y2 = pos[i + 1]
+        if y1 == y2:
+            if x2 > x1: arrow(ax, x1 + w + 0.003, y1 + h/2, x2 - 0.003, y2 + h/2)
+            else: arrow(ax, x1 - 0.003, y1 + h/2, x2 + w + 0.003, y2 + h/2)
+        else:
+            arrow(ax, x1 + w/2, y1 - 0.005, x2 + w/2, y2 + h + 0.005)
+    fig.savefig(ASSETS / "steps.png", dpi=200, bbox_inches="tight")
+    plt.close(fig)
+
+
+def asset_dataflow():
+    """DL-paper style: tensor shapes flowing through each model."""
+    fig, ax = plt.subplots(figsize=(12.6, 6.2))
+    ax.set_xlim(0, 1); ax.set_ylim(0, 1); ax.axis("off")
+
+    def chain(y, label, label_c, blocks, note=None):
+        ax.text(0.001, y + 0.10, label, fontsize=12, weight="bold", color=label_c)
+        x = 0.10
+        for text, shape, fc, wdt in blocks:
+            ax.add_patch(FancyBboxPatch((x, y), wdt, 0.115,
+                                        boxstyle="round,pad=0.008",
+                                        fc=fc, ec="0.4", lw=1.0))
+            ax.text(x + wdt/2, y + 0.078, text, ha="center", va="center",
+                    fontsize=8.8, weight="bold")
+            ax.text(x + wdt/2, y + 0.028, shape, ha="center", va="center",
+                    fontsize=8.0, color="#8B0000")
+            x_end = x + wdt
+            x = x_end + 0.022
+            if (text, shape, fc, wdt) != blocks[-1]:
+                arrow(ax, x_end + 0.002, y + 0.058, x - 0.002, y + 0.058)
+        if note:
+            ax.text(0.10, y - 0.032, note, fontsize=8.2, color="0.35",
+                    style="italic")
+
+    C_IN, C_OP, C_OUT = "#dbe9ff", "#dff2df", "#eadcf8"
+    chain(0.83, "2021 재구성\n(MLP 뱅크)", "#b45f4d", [
+        ("Px 신호", "(700,)", C_IN, 0.085),
+        ("엔벨로프 정규화", "M (700,)", C_OP, 0.105),
+        ("윈도우 접기 ·flatten", "(13×53)→689", C_OP, 0.125),
+        ("Dense 2048→1024→512", "(689)→(512)", C_OP, 0.155),
+        ("sigmoid 분류", "(3,) 확률", C_OP, 0.10),
+        ("61 윈도우 반복→피크", "A 위치만", C_OUT, 0.135),
+    ], note="윈도우마다 독립 모델 61개 · B는 별도 회귀 필요 · 윈도우 간 정보 공유 없음")
+
+    chain(0.60, "PeriodFormer\n(우리 제안)", "#3d85c6", [
+        ("M 신호 3채널", "(3, 700)", C_IN, 0.09),
+        ("TokenBuilder\n(GPU gather 접기)", "(61, 3, 13, 53)", C_OP, 0.13),
+        ("공유 CNN 임베딩", "(61, 128)", C_OP, 0.115),
+        ("+PE → Transformer ×4", "(61, 128)", C_OP, 0.14),
+        ("존재확률 헤드", "P(spin) (61,)", C_OP, 0.105),
+        ("후보 영역", "구간 목록", C_OUT, 0.085),
+    ], note="윈도우가 '토큰' — 어텐션이 61개 윈도우의 증거를 종합 → 오탐 0 · 모델 1개(1.1M)")
+
+    chain(0.37, "SpinDETR\n(비교용 e2e)", "#6aa84f", [
+        ("M 신호 3채널", "(3, 700)", C_IN, 0.09),
+        ("Conv stem (stride 4)", "(175, 128)", C_OP, 0.13),
+        ("Encoder ×4", "(175, 128)", C_OP, 0.10),
+        ("쿼리 10개 Decoder ×4", "(10, 128)", C_OP, 0.14),
+        ("존재+회귀 헤드", "10×(p, A, B)", C_OP, 0.115),
+        ("p>0.5 선택", "{(A,B)}", C_OUT, 0.08),
+    ], note="물리 사전지식 없이 원신호에서 직접 set 예측 · Hungarian 매칭 손실 · (A,B) 동시 출력")
+
+    chain(0.14, "하이브리드 최종\n(PF→DE)", "#cc0000", [
+        ("PF 후보 영역", "구간 목록", C_IN, 0.10),
+        ("영역별 DE 탐색", "스핀 +1 씩", C_OP, 0.115),
+        ("전체 재연마 (L-BFGS)", "(2k,) 파라미터", C_OP, 0.14),
+        ("BIC 모델 선택", "k* 자동 결정", C_OP, 0.115),
+        ("최종 출력", "{(A∥, A⊥)} × k*", C_OUT, 0.11),
+    ], note="학습 없음(최적화) · forward model ∏Mᵢ를 직접 피팅 · 같은 영역에 다중 스핀 허용")
+
+    ax.text(0.5, 0.985, "데이터 흐름과 텐서 shape: 2021 재구성 vs 우리 모델들",
+            ha="center", fontsize=14, weight="bold")
+    fig.savefig(ASSETS / "dataflow.png", dpi=200, bbox_inches="tight")
+    plt.close(fig)
+
+
+def asset_fitrender():
+    """How a fit curve is rendered from a spin list (real NV2 data demo)."""
+    sys.path.insert(0, str(ROOT))
+    import json
+    import pandas as pd
+    from cpmg.physics import cpmg_M
+    from cpmg.represent import envelope_normalize
+    nv2 = pd.read_excel(ROOT / "dataset" / "exp_dataset" / "CPMG_NV2.xlsx")
+    tau = nv2["Time"].to_numpy(float)
+    px = nv2["CPMG16"].to_numpy(float)
+    m_data, _ = envelope_normalize(tau, px)
+    spins = json.loads((ROOT / "results" / "benchmark_v2" /
+                        "hybrid_results.json").read_text())["nv2_ensemble"]["spins_khz"]
+    ab = np.array(spins) * 1e3
+    US = 1e-6
+    zoom = tau <= 4e-6
+
+    fig, axes = plt.subplots(1, 3, figsize=(12.6, 3.1))
+    ax = axes[0]
+    ax.plot(tau[zoom] / US, px[zoom], ".", ms=2, color="0.4")
+    ax.plot(tau[zoom] / US, m_data[zoom] * 0.4 + 0.5, ".", ms=2, color="tab:blue",
+            alpha=0.5)
+    ax.set_title("① 원시 Pₓ → 엔벨로프 정규화 M", fontsize=10)
+    ax.set_xlabel("τ (µs)")
+    ax.text(0.5, 0.02, "M = (2Px−1) / (a0·exp(−(τ/T2)^n))", transform=ax.transAxes,
+            ha="center", fontsize=9, color="tab:blue")
+
+    ax = axes[1]
+    picks = [(346.9, 261.0), (-58.9, 181.7), (-12.6, 42.3)]
+    for i, (a, b) in enumerate(picks):
+        mi = cpmg_M(tau, [[a * 1e3, b * 1e3]], 16, 440.1)
+        ax.plot(tau[zoom] / US, mi[zoom] + i * 1.1, lw=0.9,
+                label=f"({a:+.0f}, {b:.0f}) kHz")
+    ax.set_yticks([])
+    ax.legend(fontsize=7, loc="lower right")
+    ax.set_title("② 스핀별 딥 트레인 Mᵢ(τ)", fontsize=10)
+    ax.set_xlabel("τ (µs)")
+
+    ax = axes[2]
+    m_fit = cpmg_M(tau, ab, 16, 440.1)
+    rmse = float(np.sqrt(np.mean((m_fit - m_data) ** 2)))
+    ax.plot(tau[zoom] / US, m_data[zoom], ".", ms=2.2, color="0.55")
+    ax.plot(tau[zoom] / US, m_fit[zoom], "-", lw=1.1, color="tab:red")
+    ax.set_title(f"③ 곱 ∏Mᵢ = 피팅 곡선 (10스핀, RMSE {rmse:.3f})", fontsize=10)
+    ax.set_xlabel("τ (µs)")
+    ax.text(0.5, 0.02, "M_fit(τ) = ∏ Mi(τ; Ai, Bi)   (합이 아닌 곱!)",
+            transform=ax.transAxes, ha="center", fontsize=9, color="tab:red")
+    fig.tight_layout()
+    fig.savefig(ASSETS / "fitrender.png", dpi=200, bbox_inches="tight")
+    plt.close(fig)
+
+
 def build_deck():
     from pptx import Presentation
     from pptx.util import Emu, Inches, Pt
@@ -185,6 +339,17 @@ def build_deck():
             p.text = "• " + it
             p.font.size = Pt(size)
 
+    # ---- slide: project steps overview ----
+    s = prs.slides.add_slide(blank)
+    add_title(s, "무엇을 했는가: 7단계 요약",
+              "물리 검증 → 2021 재구성 → ablation → 신규 모델 → 하이브리드 → 실측 GT 검증 → 실데이터 확정")
+    s.shapes.add_picture(str(ASSETS / "steps.png"), Inches(0.4),
+                         Inches(1.35), width=Inches(12.5))
+    add_bullets(s, [
+        "모든 학습은 forward model 합성 데이터만 사용 — 실험 데이터와 실측 배스는 테스트 전용 (누수 없음)",
+        "각 단계의 산출물이 다음 단계의 근거가 되는 구조: 예) ablation의 발견(AE 유해, joint-N 유효)이 신규 모델 설계로 이어짐",
+    ], 0.5, 6.6, 12.3, size=12.5)
+
     # ---- slide 1: model ----
     s = prs.slides.add_slide(blank)
     add_title(s, "제안 모델: PF→DE 하이브리드",
@@ -196,6 +361,17 @@ def build_deck():
         "2단 영역 제약 DE: PF가 좁힌 영역 안에서만 스핀을 순차 추가(BIC) — 한 클러스터의 다중 스핀까지 열거",
         "학습은 forward model(Eq.1–3) 합성 데이터만 사용 · 실험 데이터와 실측 배스는 테스트 전용",
     ], 0.5, 5.9, 12.3)
+
+    # ---- slide: data flow / tensor shapes (DL-paper style) ----
+    s = prs.slides.add_slide(blank)
+    add_title(s, "모델 내부: 데이터가 어떻게 흘러 무엇이 되는가",
+              "블록 위 = 연산, 붉은 글씨 = 텐서 shape · 입력(파랑) → 연산(초록) → 출력(보라)")
+    s.shapes.add_picture(str(ASSETS / "dataflow.png"), Inches(0.25),
+                         Inches(1.15), width=Inches(12.85))
+    add_bullets(s, [
+        "2021 재구성: 윈도우마다 flatten→MLP 61회 반복, A 위치만 출력 · 우리(PF): 61 윈도우를 한 텐서(61×3×13×53)로 접어 어텐션이 한 번에 종합",
+        "최종 출력 형태의 차이: 뱅크=확률 곡선(후처리 필요) / SpinDETR=(A,B) 직접 / 하이브리드=BIC로 개수까지 자동 결정된 {(A∥,A⊥)}",
+    ], 0.5, 6.75, 12.3, size=12)
 
     # ---- slide 2: comparison ----
     s = prs.slides.add_slide(blank)
@@ -223,7 +399,151 @@ def build_deck():
         "오른쪽: 최종 14스핀 forward-model이 3개 채널 실데이터를 동시 재현 (RMSE 0.088/0.116/0.176)",
     ], 0.5, 6.15, 12.3, size=12.5)
 
-    out = ROOT / "results" / "NV_C13_hybrid_3slides.pptx"
+
+    # ---- slide: how fit curves are rendered ----
+    s = prs.slides.add_slide(blank)
+    add_title(s, "피팅 곡선은 이렇게 그린다",
+              "스핀 목록 → 곱 공식 → 곡선 1개 (스핀 수 6~10은 각 방법의 BIC 자동 선택 결과)")
+    s.shapes.add_picture(str(ASSETS / "fitrender.png"), Inches(0.3),
+                         Inches(1.3), width=Inches(12.7))
+    add_bullets(s, [
+        "① 실험 Pₓ를 엔벨로프로 나눠 모델과 같은 M 스케일로 정규화 → ② 각 스핀 (Aᵢ,Bᵢ)가 자기 주기의 딥 트레인 Mᵢ 생성 → ③ 전체 곱 ∏Mᵢ가 피팅 곡선",
+        "스핀이 늘수록 곱에 항이 추가되어 미세 구조를 더 재현 — NV2에서 6→10스핀에 RMSE 0.308→0.286 (BIC 페널티에도 잔차 감소 = 과적합 아님)",
+        "그림 25의 스택 배치: 방법별 세로 오프셋 + 회색 데이터 반복 — 각 곡선을 데이터와 1:1 대조하면서 방법 간 비교",
+    ], 0.5, 5.6, 12.3, size=12)
+
+    # ---- slide 4/5: per-method fit overlays with coupling strengths ----
+    from pptx.dml.color import RGBColor
+
+    METHOD_COLORS = {"DE": RGBColor(0x1F, 0x77, 0xB4),
+                     "SpinDETR": RGBColor(0x2C, 0xA0, 0x2C),
+                     "hybrid": RGBColor(0x94, 0x67, 0xBD),
+                     "ENSEMBLE": RGBColor(0xD6, 0x27, 0x28)}
+
+    def add_method_lists(slide, entries, left, top, width, size=10.5):
+        tb = slide.shapes.add_textbox(Inches(left), Inches(top),
+                                      Inches(width), Inches(5.6))
+        tf = tb.text_frame
+        tf.word_wrap = True
+        first = True
+        for name, color, spins in entries:
+            p1 = tf.paragraphs[0] if first else tf.add_paragraph()
+            first = False
+            p1.text = name
+            p1.font.size = Pt(size + 1.5)
+            p1.font.bold = True
+            p1.font.color.rgb = color
+            p2 = tf.add_paragraph()
+            p2.text = spins
+            p2.font.size = Pt(size - 1)
+            p2.font.color.rgb = color
+
+    s = prs.slides.add_slide(blank)
+    add_title(s, "NV1: 모델별 피팅 오버레이 + 검출 결합강도",
+              "회색 = 실험 데이터(행마다 반복) · 곡선 색 = 알고리즘 · (A∥, A⊥) kHz")
+    s.shapes.add_picture(str(FIGS / "24_method_overlays_NV1.png"),
+                         Inches(0.3), Inches(1.15), height=Inches(6.1))
+    add_method_lists(s, [
+        ("cdetect-DE (8 spins, RMSE 0.123)", METHOD_COLORS["DE"],
+         "(+9.2,31) (−5.6,26) (+3.3,30) (+23.7,24) (+40.7,33) (+65.2,30) (+91.2,36) (−87.6,19)"),
+        ("SpinDETR (9 spins, RMSE 0.147)", METHOD_COLORS["SpinDETR"],
+         "(−6.2,29) (+7.4,29) (+13.1,25) (−15.5,21) (−2.2,23) (+37.6,27) (+42.5,31) (+55.9,24) (−34.4,17)"),
+        ("하이브리드 narrow (10 spins, RMSE 0.133)", METHOD_COLORS["hybrid"],
+         "(−19.0,16) (−13.9,16) (−8.0,16) (−5.1,23) (+1.1,21) (+4.0,27) (+8.5,30) (+14.5,25) (+37.5,28) (+45.0,33)"),
+        ("ENSEMBLE 최종 (14 spins, RMSE 0.116)", METHOD_COLORS["ENSEMBLE"],
+         "(−87.9,18) (−18.8,16) (−11.5,14) (−5.1,22) (+0.6,17) (+4.0,26) (+8.4,28) (+14.2,22) (+24.3,20) (+39.0,28) (+48.0,25) (+65.6,28) (+91.9,33) (+114.4,24)"),
+    ], 7.35, 1.3, 5.7)
+
+    s = prs.slides.add_slide(blank)
+    add_title(s, "NV2: 모델별 피팅 오버레이 + 검출 결합강도",
+              "CPMG-16 단일 채널 · 강결합 영역 (A⊥ 최대 ~290 kHz)")
+    s.shapes.add_picture(str(FIGS / "25_method_overlays_NV2.png"),
+                         Inches(0.3), Inches(1.15), height=Inches(6.1))
+    add_method_lists(s, [
+        ("cdetect-DE (6 spins, RMSE 0.308)", METHOD_COLORS["DE"],
+         "(−51.5,199) (+51.1,94) (+346.2,263) (−39.2,67) (−152.3,99) (−14.1,50)"),
+        ("하이브리드 v1 (8 spins, RMSE 0.308)", METHOD_COLORS["SpinDETR"],
+         "(−45.7,53) (−39.3,71) (−32.5,151) (−12.8,42) (−3.5,40) (+48.3,109) (+55.7,54) (+345.7,266)"),
+        ("하이브리드 refined (9 spins, RMSE 0.322)", METHOD_COLORS["hybrid"],
+         "(−58.8,181) (−45.7,51) (−39.6,70) (−21.6,136) (−12.3,42) (+52.7,85) (+322.0,49) (+341.3,288) (+349.1,257)"),
+        ("ENSEMBLE 최종 (10 spins, RMSE 0.286)", METHOD_COLORS["ENSEMBLE"],
+         "(−151.2,95) (−58.9,182) (−45.9,50) (−38.9,67) (−12.6,42) (−2.7,37) (+51.7,91) (+55.9,55) (+346.9,261) (+430.7,58)"),
+    ], 7.35, 1.3, 5.7)
+
+    # ---- slide 6/7: A-tensor tables ----
+    def add_table(slide, headers, rows, left, top, width, height, fontsize=8.5,
+                  hdr_colors=None):
+        shape = slide.shapes.add_table(len(rows) + 1, len(headers),
+                                       Inches(left), Inches(top),
+                                       Inches(width), Inches(height))
+        tbl = shape.table
+        for j, htext in enumerate(headers):
+            c = tbl.cell(0, j)
+            c.text = htext
+            c.text_frame.paragraphs[0].font.size = Pt(fontsize)
+            c.text_frame.paragraphs[0].font.bold = True
+            if hdr_colors and hdr_colors[j]:
+                c.fill.solid()
+                c.fill.fore_color.rgb = hdr_colors[j]
+        for i, row in enumerate(rows):
+            for j, val in enumerate(row):
+                c = tbl.cell(i + 1, j)
+                c.text = val
+                pgh = c.text_frame.paragraphs[0]
+                pgh.font.size = Pt(fontsize)
+                if j == 0:
+                    pgh.font.bold = True
+
+    HC = [RGBColor(0xF4, 0xCC, 0xCC), RGBColor(0xFC, 0xE5, 0xCD),
+          RGBColor(0xD9, 0xD9, 0xD9), RGBColor(0xD9, 0xD9, 0xD9),
+          RGBColor(0xD9, 0xD9, 0xD9), RGBColor(0xD9, 0xEA, 0xD3),
+          RGBColor(0xCF, 0xE2, 0xF3), RGBColor(0xEA, 0xD1, 0xDC)]
+
+    NV1_ROWS = [
+        ("(−87.9, 18)", "(−88, 47)", "—", "—", "−86", "—", "(−87.6, 19)", "—"),
+        ("(−18.8, 16)", "—", "−20", "−16", "−16", "(−15.5, 21)", "—", "(−19.0, 16)"),
+        ("(−11.5, 14)", "—", "—", "−8", "—", "—", "—", "(−13.9, 16)"),
+        ("(−5.1, 22)", "(−5, 35)", "−6", "−8", "−6", "(−6.2, 29)", "(−5.6, 26)", "(−5.1, 23)"),
+        ("(+0.6, 17)", "—", "+2", "—", "+2", "(−2.2, 23)", "(+3.3, 30)", "(+1.1, 21)"),
+        ("(+4.0, 26)", "—", "+2", "+4", "+2", "—", "(+3.3, 30)", "(+4.0, 27)"),
+        ("(+8.4, 28)", "(+8, 31)", "+12", "+4", "+8", "(+7.4, 29)", "(+9.2, 31)", "(+8.5, 30)"),
+        ("(+14.2, 22)", "—", "+12", "—", "+14", "(+13.1, 25)", "—", "(+14.5, 25)"),
+        ("(+24.3, 20)", "—", "+22", "+28", "+22", "—", "(+23.7, 24)", "—"),
+        ("(+39.0, 28)", "(−38, 37)*", "+42", "+42", "+38/40", "(+37.6, 27)", "(+40.7, 33)", "(+37.5, 28)"),
+        ("(+48.0, 25)", "—", "+46", "—", "—", "—", "—", "(+45.0, 33)"),
+        ("(+65.6, 28)", "—", "—", "—", "+64", "—", "(+65.2, 30)", "—"),
+        ("(+91.9, 33)", "—", "—", "—", "+92", "—", "(+91.2, 36)", "—"),
+        ("(+114.4, 24)", "—", "—", "—", "+116", "—", "—", "—"),
+        ("후보 (−34?)", "(−38, 37)?", "−34", "−30", "—", "(−34.4, 17)", "—", "—"),
+    ]
+    s = prs.slides.add_slide(blank)
+    add_title(s, "NV1: 알고리즘별 A-텐서 값 종합표",
+              "값 = (A∥, A⊥) kHz · 윈도우뱅크/PF는 A 위치만 출력 · *앵커 부호는 m_s 브랜치 관례 차이")
+    add_table(s, ["앙상블 최종", "ppt 앵커", "2021-MLP", "CNN뱅크", "PF",
+                  "SpinDETR", "cdetect-DE", "하이브리드"],
+              NV1_ROWS, 0.3, 1.25, 12.75, 5.9, fontsize=9, hdr_colors=HC)
+
+    NV2_ROWS = [
+        ("(−151.2, 95)", "(+150, 110)", "—", "(−152.3, 99)", "—", "—"),
+        ("(−58.9, 182)", "—", "−50 / −60", "(−51.5, 199)", "—", "(−58.8, 181)"),
+        ("(−45.9, 50)", "—", "—", "—", "(−45.7, 53)", "(−45.7, 51)"),
+        ("(−38.9, 67)", "(−42, 150)", "—", "(−39.2, 67)", "(−39.3, 71)", "(−39.6, 70)"),
+        ("(−12.6, 42)", "—", "−15 / —", "(−14.1, 50)", "(−12.8, 42)", "(−12.3, 42)"),
+        ("(−2.7, 37)", "—", "—", "—", "(−3.5, 40)", "—"),
+        ("(+51.7, 91)", "—", "+55 / +54", "(+51.1, 94)", "(+48.3, 109)", "(+52.7, 85)"),
+        ("(+55.9, 55)", "—", "+55 / +54", "—", "(+55.7, 54)", "—"),
+        ("(+346.9, 261)", "(−340, 290)", "+345 / +348", "(+346.2, 263)", "(+345.7, 266)", "(+341/+349, 288/257)"),
+        ("(+430.7, 58) ⚠", "—", "— / +420", "—", "—", "(+322, 49)?"),
+    ]
+    s = prs.slides.add_slide(blank)
+    add_title(s, "NV2: 알고리즘별 A-텐서 값 종합표",
+              "값 = (A∥, A⊥) kHz · CPMG-16 단일 채널 · ⚠ = 축퇴 잔재 보류 · 앵커 3/3 회수")
+    add_table(s, ["앙상블 최종", "ppt 앵커", "PF ±400/±600", "cdetect-DE",
+                  "하이브리드 v1", "하이브리드 refined"],
+              NV2_ROWS, 0.5, 1.35, 12.3, 4.9, fontsize=10,
+              hdr_colors=[HC[0], HC[1], HC[4], HC[6], HC[7], HC[7]])
+
+    out = ROOT / "results" / "NV_C13_hybrid_slides.pptx"
     prs.save(out)
     print("saved ->", out)
 
@@ -232,4 +552,7 @@ if __name__ == "__main__":
     asset_pipeline()
     asset_compare()
     asset_f1_bars()
+    asset_steps()
+    asset_dataflow()
+    asset_fitrender()
     build_deck()
