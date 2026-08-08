@@ -308,6 +308,54 @@ def asset_fitrender():
     plt.close(fig)
 
 
+
+
+def asset_analogy():
+    """Five designs explained by analogy, each fixing the previous weakness."""
+    fig, ax = plt.subplots(figsize=(12.6, 4.9))
+    ax.set_xlim(0, 1); ax.set_ylim(0, 1); ax.axis("off")
+    cards = [
+        ("2021 방식", "창문 검사관 61명", "#f2d5cc",
+         "주기(A)마다 검사관이 자기\n창문 그림만 보고 판정",
+         "약점: 서로 대화가 없어\n노이즈에 잘 속는다(오탐)"),
+        ("CNN 뱅크", "더 좋은 눈", "#fde9c8",
+         "검사관에게 패턴 인식 눈(CNN)과\n사진 3장(N=8/16/20)을 줌",
+         "개선되지만 여전히\n각자 판정한다"),
+        ("SpinDETR", "속기사", "#d9ead3",
+         "물리 힌트 없이 신호 전체를 듣고\n스핀 목록을 바로 받아씀",
+         "장점: (A,B) 동시 출력\n약점: 힌트가 없어 불리"),
+        ("PeriodFormer", "검사관 회의", "#cfe2f3",
+         "61명이 증거를 한자리에서\n맞춰봄(어텐션)",
+         "진짜 스핀만 이웃 창문에도\n흔적을 남긴다 → 오탐 0"),
+        ("하이브리드", "회의 + 측량사", "#ead1dc",
+         "회의가 어디인지 정하면 측량사(DE)가\n그 구역만 정밀 측량",
+         "몇 개인지는 통계 기준\n(BIC)이 자동 결정"),
+    ]
+    w = 0.178
+    labels = ["판정 눈을 개선", "힌트를 버려보면?\n(대조 실험)",
+              "힌트 + 회의를 결합", "개수 세기 보완"]
+    for i, (name, nick, fc, body, note) in enumerate(cards):
+        x = 0.008 + i * 0.20
+        ax.add_patch(FancyBboxPatch((x, 0.30), w, 0.58,
+                                    boxstyle="round,pad=0.012",
+                                    fc=fc, ec="0.35", lw=1.2))
+        ax.text(x + w/2, 0.83, name, ha="center", fontsize=11, weight="bold")
+        ax.text(x + w/2, 0.75, nick, ha="center", fontsize=12,
+                weight="bold", color="#333")
+        ax.text(x + w/2, 0.60, body, ha="center", va="center", fontsize=8.8)
+        ax.text(x + w/2, 0.40, note, ha="center", va="center", fontsize=8.3,
+                color="#8B0000")
+        if i < 4:
+            arrow(ax, x + w + 0.004, 0.59, x + 0.20 - 0.004, 0.59)
+            ax.text(x + w + 0.011, 0.50, labels[i], ha="left", fontsize=7.6,
+                    color="0.35", style="italic")
+    ax.text(0.5, 0.10, "각 설계는 바로 앞 방식의 구체적 약점 하나를 고친다 — "
+            "그래서 성능 향상의 원인을 분리해 검증할 수 있다",
+            ha="center", fontsize=11, weight="bold", color="#1155CC")
+    fig.savefig(ASSETS / "analogy.png", dpi=200, bbox_inches="tight")
+    plt.close(fig)
+
+
 def build_deck():
     from pptx import Presentation
     from pptx.util import Emu, Inches, Pt
@@ -317,17 +365,25 @@ def build_deck():
     prs.slide_height = Inches(7.5)
     blank = prs.slide_layouts[6]
 
-    def add_title(slide, text, sub=None):
-        tb = slide.shapes.add_textbox(Inches(0.4), Inches(0.15),
-                                      Inches(12.5), Inches(0.9))
+    from pptx.dml.color import RGBColor as _RGB
+
+    def add_title(slide, text, sub=None, msg=None):
+        tb = slide.shapes.add_textbox(Inches(0.4), Inches(0.12),
+                                      Inches(12.5), Inches(1.0))
         tf = tb.text_frame
         tf.text = text
-        tf.paragraphs[0].font.size = Pt(28)
+        tf.paragraphs[0].font.size = Pt(26)
         tf.paragraphs[0].font.bold = True
         if sub:
             p = tf.add_paragraph()
             p.text = sub
-            p.font.size = Pt(13)
+            p.font.size = Pt(12)
+        if msg:
+            p = tf.add_paragraph()
+            p.text = "▶ " + msg
+            p.font.size = Pt(14)
+            p.font.bold = True
+            p.font.color.rgb = _RGB(0xB4, 0x50, 0x00)
 
     def add_bullets(slide, items, left, top, width, size=13):
         tb = slide.shapes.add_textbox(Inches(left), Inches(top),
@@ -342,7 +398,8 @@ def build_deck():
     # ---- slide: project steps overview ----
     s = prs.slides.add_slide(blank)
     add_title(s, "무엇을 했는가: 7단계 요약",
-              "물리 검증 → 2021 재구성 → ablation → 신규 모델 → 하이브리드 → 실측 GT 검증 → 실데이터 확정")
+              "물리 검증 → 2021 재구성 → ablation → 신규 모델 → 하이브리드 → 실측 GT 검증 → 실데이터 확정",
+              msg="모든 주장 뒤에 검증 단계를 붙였다 — 마지막엔 정답을 아는 실측 스핀 환경으로 확인")
     s.shapes.add_picture(str(ASSETS / "steps.png"), Inches(0.4),
                          Inches(1.35), width=Inches(12.5))
     add_bullets(s, [
@@ -353,7 +410,8 @@ def build_deck():
     # ---- slide 1: model ----
     s = prs.slides.add_slide(blank)
     add_title(s, "제안 모델: PF→DE 하이브리드",
-              "상온 NV CPMG에서 ¹³C 핵스핀 (A∥, A⊥) 자동 추출")
+              "상온 NV CPMG에서 ¹³C 핵스핀 (A∥, A⊥) 자동 추출",
+              msg="어디에 있나(신경망 검출)와 몇 개·얼마나 강한가(물리 피팅)를 분리하니 둘 다 잘하게 됐다")
     s.shapes.add_picture(str(ASSETS / "pipeline.png"), Inches(0.35),
                          Inches(1.15), width=Inches(12.6))
     add_bullets(s, [
@@ -365,7 +423,8 @@ def build_deck():
     # ---- slide: data flow / tensor shapes (DL-paper style) ----
     s = prs.slides.add_slide(blank)
     add_title(s, "모델 내부: 데이터가 어떻게 흘러 무엇이 되는가",
-              "블록 위 = 연산, 붉은 글씨 = 텐서 shape · 입력(파랑) → 연산(초록) → 출력(보라)")
+              "블록 위 = 연산, 붉은 글씨 = 텐서 shape · 입력(파랑) → 연산(초록) → 출력(보라)",
+              msg="모델 간 본질적 차이는 정보가 어디서 합쳐지는가 — 2021은 끝까지 안 합치고, 우리는 어텐션에서 합친다")
     s.shapes.add_picture(str(ASSETS / "dataflow.png"), Inches(0.25),
                          Inches(1.15), width=Inches(12.85))
     add_bullets(s, [
@@ -376,7 +435,8 @@ def build_deck():
     # ---- slide 2: comparison ----
     s = prs.slides.add_slide(blank)
     add_title(s, "아키텍처 비교: 2021 → 하이브리드",
-              "같은 조건·같은 합성 GT에서 재학습해 공정 비교 (ablation)")
+              "같은 조건·같은 합성 GT에서 재학습해 공정 비교 (ablation)",
+              msg="상온 조건에서 2021 F1 0.57 → 제안 0.94 — 향상분이 어느 설계에서 왔는지 숫자로 분리했다")
     s.shapes.add_picture(str(ASSETS / "compare_schematic.png"), Inches(0.35),
                          Inches(1.1), width=Inches(12.6))
     s.shapes.add_picture(str(ASSETS / "f1_bars.png"), Inches(0.35),
@@ -385,10 +445,23 @@ def build_deck():
         "상온 노이즈에서 2021 F1 0.57 → 하이브리드 계열 0.94 · 기여 분해: CNN(+0.14), joint-N(+0.07), 토큰-어텐션(+0.10)",
     ], 0.5, 7.0, 12.3, size=12)
 
+    # ---- slide: analogy for non-DL readers ----
+    s = prs.slides.add_slide(blank)
+    add_title(s, "비유로 이해하는 다섯 설계",
+              "딥러닝을 몰라도 되는 설명 — 각 방법이 무엇을 하고, 왜 그렇게 바꿨는가",
+              msg="설계 변경은 취향이 아니라 진단이다 — 앞 방법이 실패하는 지점을 하나씩 고쳤다")
+    s.shapes.add_picture(str(ASSETS / "analogy.png"), Inches(0.35),
+                         Inches(1.45), width=Inches(12.6))
+    add_bullets(s, [
+        "왜 회의(어텐션)가 결정적인가: 상온 노이즈는 한 창문에서는 스핀처럼 보일 수 있지만, 이웃 창문들과 대조하면 들통난다 — 그래서 PeriodFormer의 오탐이 0이 된다",
+        "왜 측량사(물리 피팅)가 필요한가: 회의는 이 근처에 있다까지만 안다 — 한 구역에 몇 개가 겹쳐 있는지는 물리 공식을 데이터에 맞춰봐야(BIC) 알 수 있다",
+    ], 0.5, 6.5, 12.3, size=12.5)
+
     # ---- slide 3: validation ----
     s = prs.slides.add_slide(blank)
     add_title(s, "검증: 3중 근거",
-              "① 합성 GT ② 실측 50-스핀 디지털 트윈(공개 데이터·테스트 전용) ③ 실데이터 교차 수렴")
+              "① 합성 GT ② 실측 50-스핀 디지털 트윈(공개 데이터·테스트 전용) ③ 실데이터 교차 수렴",
+              msg="정답을 아는 실제 스핀 환경(Delft 공개 데이터)에서 저온·상온·오차주입 전 조건 1위")
     s.shapes.add_picture(str(FIGS / "23_method_comparison_NV1.png"),
                          Inches(0.35), Inches(1.15), width=Inches(7.1))
     s.shapes.add_picture(str(FIGS / "21_ensemble_overlay_NV1.png"),
@@ -403,7 +476,8 @@ def build_deck():
     # ---- slide: how fit curves are rendered ----
     s = prs.slides.add_slide(blank)
     add_title(s, "피팅 곡선은 이렇게 그린다",
-              "스핀 목록 → 곱 공식 → 곡선 1개 (스핀 수 6~10은 각 방법의 BIC 자동 선택 결과)")
+              "스핀 목록 → 곱 공식 → 곡선 1개 (스핀 수 6~10은 각 방법의 BIC 자동 선택 결과)",
+              msg="곡선은 그린 것이 아니라 스핀 목록에서 물리 공식으로 계산된 예측 — 데이터와 맞으면 목록이 맞다는 뜻")
     s.shapes.add_picture(str(ASSETS / "fitrender.png"), Inches(0.3),
                          Inches(1.3), width=Inches(12.7))
     add_bullets(s, [
@@ -440,7 +514,8 @@ def build_deck():
 
     s = prs.slides.add_slide(blank)
     add_title(s, "NV1: 모델별 피팅 오버레이 + 검출 결합강도",
-              "회색 = 실험 데이터(행마다 반복) · 곡선 색 = 알고리즘 · (A∥, A⊥) kHz")
+              "회색 = 실험 데이터(행마다 반복) · 곡선 색 = 알고리즘 · (A∥, A⊥) kHz",
+              msg="스핀을 더 많이 찾은 최종 목록(14개)이 잔차도 가장 작다 — 과적합이 아니라 실제 스핀이라는 증거")
     s.shapes.add_picture(str(FIGS / "24_method_overlays_NV1.png"),
                          Inches(0.3), Inches(1.15), height=Inches(6.1))
     add_method_lists(s, [
@@ -456,7 +531,8 @@ def build_deck():
 
     s = prs.slides.add_slide(blank)
     add_title(s, "NV2: 모델별 피팅 오버레이 + 검출 결합강도",
-              "CPMG-16 단일 채널 · 강결합 영역 (A⊥ 최대 ~290 kHz)")
+              "CPMG-16 단일 채널 · 강결합 영역 (A⊥ 최대 ~290 kHz)",
+              msg="채널이 하나뿐인 어려운 조건에서도 10개 스핀으로 격렬한 진동 구조를 재현")
     s.shapes.add_picture(str(FIGS / "25_method_overlays_NV2.png"),
                          Inches(0.3), Inches(1.15), height=Inches(6.1))
     add_method_lists(s, [
@@ -518,7 +594,8 @@ def build_deck():
     ]
     s = prs.slides.add_slide(blank)
     add_title(s, "NV1: 알고리즘별 A-텐서 값 종합표",
-              "값 = (A∥, A⊥) kHz · 윈도우뱅크/PF는 A 위치만 출력 · *앵커 부호는 m_s 브랜치 관례 차이")
+              "값 = (A∥, A⊥) kHz · 윈도우뱅크/PF는 A 위치만 출력 · *앵커 부호는 m_s 브랜치 관례 차이",
+              msg="핵심 스핀 4개는 9개 방법 전원 일치 — 방법을 바꿔도 같은 답이 나온다")
     add_table(s, ["앙상블 최종", "ppt 앵커", "2021-MLP", "CNN뱅크", "PF",
                   "SpinDETR", "cdetect-DE", "하이브리드"],
               NV1_ROWS, 0.3, 1.25, 12.75, 5.9, fontsize=9, hdr_colors=HC)
@@ -537,7 +614,8 @@ def build_deck():
     ]
     s = prs.slides.add_slide(blank)
     add_title(s, "NV2: 알고리즘별 A-텐서 값 종합표",
-              "값 = (A∥, A⊥) kHz · CPMG-16 단일 채널 · ⚠ = 축퇴 잔재 보류 · 앵커 3/3 회수")
+              "값 = (A∥, A⊥) kHz · CPMG-16 단일 채널 · ⚠ = 축퇴 잔재 보류 · 앵커 3/3 회수",
+              msg="수동 분석 3개를 전부 회수하고 신규 7개를 추가 — 사람 눈의 상위집합")
     add_table(s, ["앙상블 최종", "ppt 앵커", "PF ±400/±600", "cdetect-DE",
                   "하이브리드 v1", "하이브리드 refined"],
               NV2_ROWS, 0.5, 1.35, 12.3, 4.9, fontsize=10,
@@ -555,4 +633,5 @@ if __name__ == "__main__":
     asset_steps()
     asset_dataflow()
     asset_fitrender()
+    asset_analogy()
     build_deck()
