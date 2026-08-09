@@ -126,6 +126,65 @@ def main():
                "• 오른쪽 NV2: 강결합 프린지 구조까지 추적 (단일 채널 한계로 1개 스핀 보류)")
     tf.paragraphs[0].font.size = Pt(12)
 
+
+    # ---------------- slide 4: cross-method consensus tiers ----------------
+    s = prs.slides.add_slide(blank)
+    add_title(s, "요약 ④: 방법 간 겹쳐서 찾은 스핀 — 합의 등급",
+              "허용오차 ±4 kHz · 계열 = 수동 / 2021영역 / CNN뱅크 / DE / SpinDETR / PF / 하이브리드",
+              msg="핵심 스핀은 원리가 다른 모든 방법과 사람 눈까지 일치 — 합의가 낮아지는 순서는 탐색범위를 벗어나는 순서와 일치")
+
+    def tier_table(x, w, title, rows, col_w):
+        tb = s.shapes.add_textbox(Inches(x), Inches(1.5), Inches(w), Inches(0.35))
+        tb.text_frame.text = title
+        tb.text_frame.paragraphs[0].font.size = Pt(14)
+        tb.text_frame.paragraphs[0].font.bold = True
+        shape = s.shapes.add_table(len(rows) + 1, 3, Inches(x), Inches(1.9),
+                                   Inches(w), Inches(4.9))
+        t = shape.table
+        for j, wd in enumerate(col_w):
+            t.columns[j].width = Inches(wd)
+        for j, h in enumerate(["등급", "스핀 (A∥, A⊥)", "겹친 계열"]):
+            c = t.cell(0, j)
+            c.text = h
+            c.text_frame.paragraphs[0].font.size = Pt(10)
+            c.text_frame.paragraphs[0].font.bold = True
+        for i, row in enumerate(rows):
+            for j, val in enumerate(row):
+                c = t.cell(i + 1, j)
+                tf = c.text_frame
+                for li, line in enumerate(val.split("\n")):
+                    pgh = tf.paragraphs[0] if li == 0 else tf.add_paragraph()
+                    pgh.text = line
+                    pgh.font.size = Pt(8.5)
+                    if j == 0:
+                        pgh.font.bold = True
+
+    nv1_rows = [
+        ("🥇 전원 7계열\n(+앵커)", "(−5.1, 22)  (+8.4, 28)  (+39.0, 28)",
+         "수동·2021영역·CNN·DE·\nSpinDETR·PF·하이브리드 전부"),
+        ("🥈 5–6계열", "(−18.8, 16)  (+0.6, 17)\n(+4.0, 26)  (+14.2, 22)",
+         "중앙 고원 합의\n(DE 또는 SpinDETR 일부 누락)"),
+        ("🥉 3–4계열", "(−87.9, 18)*  (+24.3, 20)\n(+48.0, 25)  (+65.6, 28)  (+91.9, 33)",
+         "*−87.9는 ±60 밖을 보는\n방법 전원 일치 + 앵커 −88"),
+        ("⚠ ≤2계열", "(−11.5, 14)  (+114.4, 24)", "하이브리드 계열 / PF 광역만"),
+        ("📌 목록 외 후보", "A ≈ −30~−34", "2021(−34)·CNN(−30)·\nSpinDETR(−34.4) 3계열 겹침"),
+    ]
+    nv2_rows = [
+        ("🥇 전원+앵커", "(+346.9, 261)  (−38.9, 67)",
+         "PF±400/±600·DE·하이브리드\n전 버전 + 앵커"),
+        ("🥈 4계열", "(−58.9, 182)  (−12.6, 42)\n(+51.7, 91)", "PF·DE·v1·refined"),
+        ("🥉 3계열", "(+55.9, 55)", "PF·v1·앙상블"),
+        ("2계열+앵커", "(−151.2, 95)", "DE·앙상블 + 앵커 +150\n(PF만 놓침)"),
+        ("⚠ ≤2계열", "(−45.9, 50)  (−2.7, 37)\n(+430.7, 58) 보류", "하이브리드 계열만"),
+    ]
+    tier_table(0.3, 6.55, "NV1 (14스핀 + 후보 1)", nv1_rows, [1.35, 2.7, 2.5])
+    tier_table(7.05, 6.0, "NV2 (10스핀)", nv2_rows, [1.35, 2.35, 2.3])
+    tb = s.shapes.add_textbox(Inches(0.4), Inches(6.95), Inches(12.5), Inches(0.45))
+    tf = tb.text_frame
+    tf.text = ("• 읽는 법: 등급이 낮은 스핀은 '의심스러운' 것이 아니라 대부분 |A|가 커서 좁은-범위 방법들의 시야 밖 — "
+               "불일치가 아니라 각 방법의 탐색 범위 문제임이 구조적으로 설명됨")
+    tf.paragraphs[0].font.size = Pt(11.5)
+
     out = ROOT / "results" / "NV_C13_summary_3slides.pptx"
     prs.save(out)
     print("saved ->", out)
