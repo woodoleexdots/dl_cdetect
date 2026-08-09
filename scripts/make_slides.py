@@ -407,6 +407,75 @@ def build_deck():
         "각 단계의 산출물이 다음 단계의 근거가 되는 구조: 예) ablation의 발견(AE 유해, joint-N 유효)이 신규 모델 설계로 이어짐",
     ], 0.5, 6.6, 12.3, size=12.5)
 
+    # ---- slide: public 50-spin validation (placed up front) ----
+    s = prs.slides.add_slide(blank)
+    add_title(s, "검증 근거: 공개 실측 50-스핀 배스 (디지털 트윈)",
+              "van de Stolpe et al., Nat. Commun. 2024 (4TU 공개 데이터) — Jung 2021과 같은 NV 계보 · B=403.553 G까지 동일",
+              msg="정답(50개 스핀의 실측 A∥·A⊥)을 아는 실제 스핀 환경에서 성능을 채점했다 — 스핀 값은 학습에 미사용, 순수 테스트")
+    s.shapes.add_picture(str(FIGS / "26_twin_validation.png"), Inches(0.35),
+                         Inches(1.5), width=Inches(12.6))
+    add_bullets(s, [
+        "왼쪽: 공개 실측값으로 합성한 트윈 신호(회색) 위에 우리가 검출한 스핀들의 forward model(빨강)을 피팅 — 저온 RMSE 0.074 / 상온 0.143",
+        "오른쪽: 공개 GT 27스핀(빨강)과 검출(파랑)의 위치 대조 — 저온 21/27 회수, 상온 11/27·오탐 0 (상온 한계는 물리적 정보량: EDA의 검출가능 상한과 정합)",
+    ], 0.5, 6.85, 12.3, size=12)
+
+    # ---- Q&A section: five audience questions ----
+    s = prs.slides.add_slide(blank)
+    add_title(s, "Q1. 스핀이 몇 개인지 모르는데 어떻게 찾았나",
+              "스핀 수 k 자체가 미지수인 문제(trans-dimensional) — 두 가지 독립 원리로 결정",
+              msg="새 스핀은 벌점(월세)을 내야 입주한다 — 진짜 스핀만 자기 딥을 설명해서 벌점을 넘고, 노이즈는 탈락한다")
+    s.shapes.add_picture(str(ASSETS / "q1_bic.png"), Inches(0.35),
+                         Inches(1.5), width=Inches(12.6))
+    add_bullets(s, [
+        "① BIC: 스핀 1개 = 파라미터 2개 벌점(2·ln n). 잔차 감소가 벌점보다 클 때만 채택 → NV1에서 k=14가 최소, 15번째부터 반등",
+        "② 독립 교차확인: 스핀 수를 확률변수로 두는 RJMCMC의 사후분포 P(k|데이터)가 14~16에 집중(최빈 15) — 서로 다른 원리가 같은 답",
+        "안전장치: 모델 오차가 가짜 스핀으로 흡수되는 것을 PF 후보영역이 차단 (영역 밖 입주 신청 불가)",
+    ], 0.5, 5.75, 12.3, size=12.5)
+
+    s = prs.slides.add_slide(blank)
+    add_title(s, "Q2. 기존 2021 방법을 어떻게 재현했나",
+              "공개 코드(imports/models.py)와 논문 Methods를 기준으로 핵심 파이프라인을 동일 구조로 재구현",
+              msg="재현 범위를 명시적으로 한정했다 — 보고하는 2021 수치는 원방법 성능의 하한(lower bound)")
+    s.shapes.add_picture(str(ASSETS / "q2_repro.png"), Inches(0.35),
+                         Inches(1.6), width=Inches(12.6))
+    add_bullets(s, [
+        "충실성 근거: 같은 표현(slice-stack)·같은 네트워크 구조(Dense 2048-1024-512)·같은 디노이저(conv-AE k4/64ch)를 코드 수준에서 재현",
+        "작동 검증: 재현본이 저온 트윈(그들의 조건)에서는 정상 작동(오탐 0) — 성능 저하는 상온 조건에서만 발생 → 구현 오류가 아니라 조건의 문제",
+    ], 0.5, 6.2, 12.3, size=12.5)
+
+    s = prs.slides.add_slide(blank)
+    add_title(s, "Q3. 50-스핀 공개 데이터는 믿을만한가 — 어떤 데이터인가",
+              "Delft(Taminiau 그룹)의 같은 NV 계보에서 측정된, 3중 피어리뷰를 거친 실측 스핀 지도",
+              msg="정답을 잰 실험 기법(SEDOR 이중공명, 1.8 Hz 분해능)이 우리 방법(CPMG)과 완전히 독립 — 순환 논증이 없다")
+    s.shapes.add_picture(str(ASSETS / "q3_lineage.png"), Inches(0.35),
+                         Inches(1.55), width=Inches(12.6))
+    add_bullets(s, [
+        "2021 논문(Jung et al.)이 분석한 바로 그 NV 계보 — 자기장 403.553 G가 소수점까지 일치, 27-스핀(2019 Nature)의 상위집합",
+        "우리는 이 50개 실측 (A∥, A⊥)를 물리 모델에 넣어 CPMG 신호를 합성(디지털 트윈)하고, 그 신호에서 스핀을 되찾는 시험을 채점했다",
+    ], 0.5, 6.05, 12.3, size=12.5)
+
+    s = prs.slides.add_slide(blank)
+    add_title(s, "Q4. 그 데이터에서 충분한 검증을 하였는가",
+              "저온/상온/오차주입 3개 조건 × 노이즈 실현 4-8회 × 학습 시드 5회 + 6개 방법 비교",
+              msg="정답을 아는 환경에서 precision/recall을 직접 채점했고, 통계적 유의성(p=0.008)과 시드 강건성(±0.01)까지 확인했다")
+    s.shapes.add_picture(str(FIGS / "10_ablation_f1.png"), Inches(0.35),
+                         Inches(1.6), width=Inches(12.6))
+    add_bullets(s, [
+        "합성 GT 스위트(노이즈 스윕) + 실측 50-스핀 트윈(3개 암) + 실데이터의 3층 검증 — 각 층의 실패 모드가 서로 다름",
+        "최종 하이브리드 v2: 세 조건 모두 1위 (F1 0.84/0.57/0.61) · 다중 시드 mean±std 보고 · 하이브리드 vs 고전 피팅 우위는 오차주입 조건에서 유의(p=0.0078)",
+    ], 0.5, 6.15, 12.3, size=12.5)
+
+    s = prs.slides.add_slide(blank)
+    add_title(s, "Q5. NV1/NV2에서 찾은 핵스핀이 옳다고 볼 근거는",
+              "정답이 없는 실데이터 — 다섯 겹의 독립 증거로 신뢰를 쌓는다",
+              msg="원리가 다른 방법들이 같은 목록에 수렴하고, 그 목록의 물리 예측이 세 측정(N=8/16/20)을 동시에 재현한다")
+    s.shapes.add_picture(str(ASSETS / "q5_ci.png"), Inches(0.35),
+                         Inches(1.55), width=Inches(12.6))
+    add_bullets(s, [
+        "① 교차 수렴: 9개 방법이 핵심 스핀에 전원 일치  ② 물리 재현: 14스핀 forward model이 3개 채널 실데이터를 RMSE 0.09-0.18로 동시 설명",
+        "③ 통계적 실체: 부트스트랩 95% CI가 스핀끼리 겹치지 않음  ④ 외부 정합: 수동 분석 앵커 7/7 회수  ⑤ 물리 검증: 딥 간격 1.060 µs = 이론 1.061 µs",
+    ], 0.5, 5.95, 12.3, size=12.5)
+
     # ---- slide 1: model ----
     s = prs.slides.add_slide(blank)
     add_title(s, "제안 모델: PF→DE 하이브리드",
@@ -456,6 +525,15 @@ def build_deck():
         "왜 회의(어텐션)가 결정적인가: 상온 노이즈는 한 창문에서는 스핀처럼 보일 수 있지만, 이웃 창문들과 대조하면 들통난다 — 그래서 PeriodFormer의 오탐이 0이 된다",
         "왜 측량사(물리 피팅)가 필요한가: 회의는 이 근처에 있다까지만 안다 — 한 구역에 몇 개가 겹쳐 있는지는 물리 공식을 데이터에 맞춰봐야(BIC) 알 수 있다",
     ], 0.5, 6.5, 12.3, size=12.5)
+
+    # ---- slide: one-figure architecture summary (AI-generated) ----
+    s = prs.slides.add_slide(blank)
+    add_title(s, "네 모델 한 장 요약",
+              "생성 다이어그램 (Nano Banana Pro) — 점선: PeriodFormer의 출력이 하이브리드의 입력",
+              msg="위에서 아래로: 고립 판정(2021) → 쿼리 집합예측(SpinDETR) → 윈도우 간 어텐션(PF) → 영역 내 열거(하이브리드)")
+    s.shapes.add_picture(str(ROOT / "results" / "figs" / "paperbanana_pro" /
+                             "e_overview_all_candidate_0.png"),
+                         Inches(1.05), Inches(1.25), width=Inches(11.2))
 
     # ---- slide 3: validation ----
     s = prs.slides.add_slide(blank)
