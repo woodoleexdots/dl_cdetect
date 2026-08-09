@@ -244,6 +244,53 @@ def main():
                "• 검증 격 차이 — 실측 50-스핀 채점 F1 0.35~0.38 vs 0.57~0.84")
     tf.paragraphs[0].font.size = Pt(11.5)
 
+    # ---------------- slide: Delft 50-spin dataset overview ----------------
+    s = prs.slides.add_slide(blank)
+    add_title(s, "공개 50-스핀 데이터셋 개요 (van de Stolpe 2024)",
+              "Delft 단일 NV 주변 ¹³C 핵스핀 네트워크 — 4TU.ResearchData 공개 · Jung 2021과 같은 NV 계보",
+              msg="50개 스핀의 (A∥, A⊥)가 전부 공개된, '정답을 아는' 유일한 실제 스핀 환경 — 다음 두 슬라이드 검증의 GT")
+    s.shapes.add_picture(str(ROOT / "results" / "slides_assets" / "delft50_overview.png"),
+                         Inches(0.75), Inches(1.5), width=Inches(11.8))
+    tb = s.shapes.add_textbox(Inches(0.4), Inches(5.05), Inches(12.5), Inches(2.1))
+    tf = tb.text_frame
+    tf.word_wrap = True
+    for i, line in enumerate([
+        "• 규모 — ¹³C 핵스핀 50개(+질소 1) · 각 스핀의 hyperfine (A∥, A⊥) 정밀값 공개: A∥ −48.5 ~ +213.2 kHz, A⊥ 0.2 ~ 59.2 kHz",
+        "• 측정 조건 — 저온(~4 K) · B = 403.553 G · 장시간 상관 센싱 시퀀스로 매핑 · 핵스핀-핵스핀 커플링 474쌍도 공개(중앙값 수 Hz → 우리 측정창 14~28 µs에서는 무시 가능)",
+        "• 채점 GT — 검출 대역 박스(|A∥| ≤ 60 kHz, A⊥ ≥ 5 kHz) 안 27개로 채점 · 박스 밖 23개는 dip이 약하거나(A⊥ < 5 kHz) 대역 밖(최강 1개) — 원리적으로 우리 창에서 미검출",
+        "• 오른쪽 그림 — 같은 50개라도 측정 창에 따라 노이즈 바닥(2σ) 위 스핀 수가 다름: 저온 창이 상온 창보다 유리 → 트윈 검증의 회수율 차이(21/27 vs 11/27)의 구조적 원인",
+    ]):
+        pgh = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
+        pgh.text = line
+        pgh.font.size = Pt(11.5)
+
+    # ---------------- slide: noise modelling ----------------
+    s = prs.slides.add_slide(blank)
+    add_title(s, "노이즈 모델링 — 트윈 합성 σ의 근거",
+              "노이즈 수준은 검증의 민감 변수 — 임의 가정이 아니라 NV1·NV2 실측 데이터에서 통계적으로 추정",
+              msg="상온 트윈 σ=0.06은 실측 채널 σ̂(0.030~0.077)의 최악 수준을 취한 보수적 값 · 저온 트윈은 문헌 조건 σ=0.02")
+    tb = s.shapes.add_textbox(Inches(0.4), Inches(1.5), Inches(12.5), Inches(2.0))
+    tf = tb.text_frame
+    tf.word_wrap = True
+    for i, line in enumerate([
+        "① 추정량 — 인접점 차분 dᵢ = yᵢ₊₁ − yᵢ 는 느리게 변하는 신호 성분을 상쇄시키고 노이즈만 남김 → σ̂ = std(d)/√2  (독립 가우시안 가정의 표준 추정)",
+        "② 실측 결과 — NV1 σ̂ = 0.030 / 0.047 / 0.065 (N=8/16/20) · NV2 σ̂ = 0.077 — dip 구간의 신호 혼입만큼 과대평가 쪽으로 치우침(= 보수적 상한)",
+        "③ 트윈 합성 — 상온 트윈 σ = 0.06(백색 가우시안, NV1 최악 채널 수준) · 저온 트윈 σ = 0.02(문헌 조건) · T2 포락선·콘트라스트도 실측 범위에서 랜덤",
+        "④ 과적합 방지 — 학습 데이터는 σ 고정이 아니라 [0.03, 0.12] 범위 무작위 → 특정 노이즈 수준에 특화된 검출기가 되는 것을 차단",
+    ]):
+        pgh = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
+        pgh.text = line
+        pgh.font.size = Pt(12.5)
+
+    s.shapes.add_picture(str(ROOT / "results" / "slides_assets" / "noise_model.png"),
+                         Inches(0.35), Inches(3.85), width=Inches(12.65))
+    tb = s.shapes.add_textbox(Inches(0.4), Inches(6.65), Inches(12.5), Inches(0.6))
+    tf = tb.text_frame
+    tf.word_wrap = True
+    tf.text = ("• 그림: NV1(N=8/16/20)·NV2(N=16) 원시 데이터 확대(τ 4–7 µs) — 이동중앙값(빨강) 주변 산포가 ±2σ̂ 밴드와 일치    "
+               "• 맨 오른쪽: 채널별 σ̂ vs 채택값(0.06)·학습 범위(0.03–0.12)")
+    tf.paragraphs[0].font.size = Pt(11)
+
     # ---------------- slide 2: 50-spin validation ----------------
     s = prs.slides.add_slide(blank)
     add_title(s, "요약 ②: 공개 실측 50-스핀 배스로 검증",
