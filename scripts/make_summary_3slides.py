@@ -13,7 +13,9 @@ from pathlib import Path
 
 from pptx import Presentation
 from pptx.dml.color import RGBColor
+from pptx.enum.shapes import MSO_CONNECTOR, MSO_SHAPE
 from pptx.enum.text import PP_ALIGN
+from pptx.oxml.ns import qn
 from pptx.util import Inches, Pt
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -143,6 +145,104 @@ def main():
     tf = tb.text_frame
     tf.text = ("• 공정성 — 2021 수치는 core-pipeline 재현 기준(원방법 하한) · 두 방법 모두 같은 forward model·같은 채점 규칙")
     tf.paragraphs[0].font.size = Pt(10.5)
+
+
+    # ---------------- slide: two-model block diagrams ----------------
+    s = prs.slides.add_slide(blank)
+    add_title(s, "모델 비교: 블록 다이어그램",
+              "회색=입력 · 파랑=표현 · 초록=연산 · 주황=출력 — 위(2021) vs 아래(우리)",
+              msg="구조적 차이 두 가지: ① 윈도우 61개가 고립 판정 vs 어텐션으로 회의  ② 영역 없는 피크 vs 영역 제약 열거(BIC)")
+
+    C_IN2, C_REP2, C_NET2, C_OUT2 = "E8E8E8", "DBE9F8", "DFF2DF", "FDEBD0"
+
+    def blk(x, y, w, h, title, sub, fill, cap=None, fs=11):
+        shp = s.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(x),
+                                 Inches(y), Inches(w), Inches(h))
+        shp.fill.solid()
+        shp.fill.fore_color.rgb = RGBColor.from_string(fill)
+        shp.line.color.rgb = RGBColor.from_string("666666")
+        shp.shadow.inherit = False
+        tf = shp.text_frame
+        tf.word_wrap = True
+        tf.text = title
+        tf.paragraphs[0].font.size = Pt(fs)
+        tf.paragraphs[0].font.bold = True
+        tf.paragraphs[0].alignment = PP_ALIGN.CENTER
+        tf.paragraphs[0].font.color.rgb = RGBColor.from_string("1A1A1A")
+        if sub:
+            pgh = tf.add_paragraph()
+            pgh.text = sub
+            pgh.font.size = Pt(8.5)
+            pgh.alignment = PP_ALIGN.CENTER
+            pgh.font.color.rgb = RGBColor.from_string("7A0000")
+        if cap:
+            tb = s.shapes.add_textbox(Inches(x - 0.05), Inches(y + h + 0.02),
+                                      Inches(w + 0.1), Inches(0.45))
+            ctf = tb.text_frame
+            ctf.word_wrap = True
+            ctf.text = cap
+            ctf.paragraphs[0].font.size = Pt(8)
+            ctf.paragraphs[0].alignment = PP_ALIGN.CENTER
+            ctf.paragraphs[0].font.color.rgb = RGBColor.from_string("444444")
+
+    def arr2(x1, x2, y):
+        conn = s.shapes.add_connector(MSO_CONNECTOR.STRAIGHT, Inches(x1),
+                                      Inches(y), Inches(x2), Inches(y))
+        conn.line.width = Pt(2.25)
+        conn.line.color.rgb = RGBColor.from_string("404040")
+        ln = conn.line._get_or_add_ln()
+        ln.append(ln.makeelement(qn("a:tailEnd"),
+                                 {"type": "triangle", "w": "med", "len": "med"}))
+
+    def row(y, label_txt, label_color, blocks):
+        tb = s.shapes.add_textbox(Inches(0.15), Inches(y + 0.1), Inches(1.75),
+                                  Inches(1.0))
+        tf = tb.text_frame
+        tf.word_wrap = True
+        tf.text = label_txt
+        tf.paragraphs[0].font.size = Pt(13)
+        tf.paragraphs[0].font.bold = True
+        tf.paragraphs[0].font.color.rgb = RGBColor.from_string(label_color)
+        x = 2.0
+        gap = 0.30
+        for i, (t, sub, f, w, cap) in enumerate(blocks):
+            blk(x, y, w, 0.95, t, sub, f, cap)
+            if i < len(blocks) - 1:
+                arr2(x + w + 0.02, x + w + gap - 0.02, y + 0.475)
+            x += w + gap
+
+    row(1.85, "2021 방법\n(core-pipeline)", "8B3A2F", [
+        ("CPMG 신호", "1채널 (700,)", C_IN2, 1.45, "저온·장시간 측정 전제"),
+        ("주기 접기", "이미지 13×53", C_REP2, 1.55, "후보 주기 1개씩"),
+        ("MLP ×61", "윈도우별 독립", C_NET2, 1.85, "서로 대화 없음 → 오탐"),
+        ("3-class 확률", "(3,)/윈도우", C_NET2, 1.65, "스핀 0/1/2개 확률"),
+        ("피크 검출", "A 영역만", C_OUT2, 1.5, "개수·B값 미해결"),
+    ])
+
+    row(4.35, "우리 방법\n(하이브리드 v2)", "CC0000", [
+        ("신호 3채널", "(3, 700)", C_IN2, 1.3, "N=8/16/20 함께"),
+        ("61윈도우 접기", "토큰(61,3,13,53)", C_REP2, 1.6, "모든 주기 동시에"),
+        ("어텐션 ×4", "윈도우 간 회의", C_NET2, 1.5, "진짜 스핀만 통과 · 오탐 0"),
+        ("P(spin) → 영역", "후보 구간", C_OUT2, 1.5, "어디를 팔지 확정"),
+        ("영역 제약\nRJMCMC + BIC", "물리 공식 피팅", C_NET2, 1.75, "몇 개인지 통계로 결정"),
+        ("스핀 목록", "{(A∥,A⊥)}×k*", C_OUT2, 1.55, "NV1 14개 · CI 포함"),
+    ])
+
+    # vertical contrast annotation between rows
+    tb = s.shapes.add_textbox(Inches(2.0), Inches(3.35), Inches(11.0), Inches(0.55))
+    tf = tb.text_frame
+    tf.text = ("↕ 같은 '주기 접기'에서 출발하지만 — 2021은 여기서 끝(고립 판정), "
+               "우리는 접은 61개를 토큰으로 묶어 회의시키고, 그 결과 영역 안에서만 물리 피팅으로 열거")
+    tf.paragraphs[0].font.size = Pt(11.5)
+    tf.paragraphs[0].font.bold = True
+    tf.paragraphs[0].font.color.rgb = RGBColor.from_string("1155CC")
+
+    tb = s.shapes.add_textbox(Inches(0.4), Inches(6.75), Inches(12.5), Inches(0.6))
+    tf = tb.text_frame
+    tf.word_wrap = True
+    tf.text = ("• 출력의 격 차이 — 2021: A 위치 후보(영역)까지 · 우리: 개수(k*)·결합강도(A⊥)·오차막대(CI)까지 완결    "
+               "• 검증 격 차이 — 실측 50-스핀 채점 F1 0.35~0.38 vs 0.57~0.84")
+    tf.paragraphs[0].font.size = Pt(11.5)
 
     # ---------------- slide 2: 50-spin validation ----------------
     s = prs.slides.add_slide(blank)
