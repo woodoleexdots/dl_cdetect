@@ -1,8 +1,7 @@
 """Assets for the two new summary-deck slides.
 
 1. results/slides_assets/delft50_overview.png
-   - left : the 50 published spins in (A_par, A_perp) with the scoring box
-   - right: per-spin CPMG dip depth (cryo vs room window) vs noise floor
+   - the 50 published spins: (A_par, A_perp) scatter + both distributions
 2. results/slides_assets/noise_model.png
    - four zoom panels of the raw NV1/NV2 data with the rolling-median signal
      and the +-2*sigma_hat band from the successive-difference estimator
@@ -26,12 +25,8 @@ from openpyxl import load_workbook
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from cpmg.physics import cpmg_M
-
 ROOT = Path(__file__).resolve().parents[1]
 ASSETS = ROOT / "results" / "slides_assets"
-B_CRYO = 403.553
-B_OURS = 440.1
 
 plt.rcParams["font.family"] = ["Noto Sans CJK KR", "Apple SD Gothic Neo",
                                "AppleGothic", "DejaVu Sans"]
@@ -111,42 +106,26 @@ def fig_delft50_overview():
     d = np.load(ROOT / "dataset" / "delft_public" / "bath50.npz")
     par, perp = d["a_par"], d["a_perp"]
     n = len(par)
-    in_box = (np.abs(par) <= 60e3) & (perp >= 5e3)
 
-    tau_cryo = np.arange(1, 7001) * 4e-9
-    tau_room = np.arange(1, 701) * 20e-9
-    depth_cryo = np.array([0.5 * (1 - cpmg_M(tau_cryo, [[a, b]], 32, B_CRYO).min())
-                           for a, b in zip(par, perp)])
-    depth_room = np.array([0.5 * (1 - cpmg_M(tau_room, [[a, b]], 16, B_OURS).min())
-                           for a, b in zip(par, perp)])
-
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12.6, 3.6),
-                                   gridspec_kw={"width_ratios": [1.15, 1]})
-    ax1.axvspan(-60, 60, color="tab:blue", alpha=0.07)
-    ax1.axhline(5, color="tab:red", ls=":", lw=1)
-    ax1.scatter(par[~in_box] / 1e3, perp[~in_box] / 1e3, s=30, color="0.6",
-                label=f"박스 밖 {int((~in_box).sum())}개")
-    ax1.scatter(par[in_box] / 1e3, perp[in_box] / 1e3, s=34, color="tab:red",
-                label=f"채점 GT {int(in_box.sum())}개")
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(12.6, 3.4),
+                                        gridspec_kw={"width_ratios": [1.25, 1, 1]})
+    ax1.scatter(par / 1e3, perp / 1e3, s=34, color="tab:blue", alpha=0.85)
     ax1.set_xlabel("A∥ (kHz)", fontsize=10)
     ax1.set_ylabel("A⊥ (kHz)", fontsize=10)
-    ax1.set_title(f"공개 스핀 {n}개 — 채점 박스 |A∥|≤60 kHz · A⊥≥5 kHz",
-                  fontsize=10)
-    ax1.legend(fontsize=8.5, loc="upper right")
+    ax1.set_title(f"공개된 ¹³C 스핀 {n}개의 hyperfine (A∥, A⊥)", fontsize=10)
     ax1.tick_params(labelsize=8.5)
 
-    order = np.argsort(-depth_cryo)
-    ax2.semilogy(np.arange(n), depth_cryo[order], "o-", ms=3, lw=1,
-                 label="저온 창 (N=32, 28 µs)")
-    ax2.semilogy(np.arange(n), np.sort(depth_room)[::-1], "s-", ms=3, lw=1,
-                 color="tab:orange", label="상온 창 (N=16, 14 µs)")
-    ax2.axhline(0.04, color="tab:blue", ls=":", lw=1.2, label="2σ 저온 (0.04)")
-    ax2.axhline(0.12, color="tab:red", ls=":", lw=1.2, label="2σ 상온 (0.12)")
-    ax2.set_xlabel("스핀 순위 (dip 깊이 내림차순)", fontsize=10)
-    ax2.set_ylabel("최대 CPMG dip 깊이", fontsize=10)
-    ax2.set_title("검출 가능성: dip 깊이 vs 노이즈 바닥", fontsize=10)
-    ax2.legend(fontsize=8, loc="lower left")
+    ax2.hist(par / 1e3, bins=30, color="tab:blue", alpha=0.85)
+    ax2.set_xlabel("A∥ (kHz)", fontsize=10)
+    ax2.set_ylabel("스핀 수", fontsize=10)
+    ax2.set_title("A∥ 분포 — 대부분 약결합(|A∥|<50 kHz)", fontsize=10)
     ax2.tick_params(labelsize=8.5)
+
+    ax3.hist(perp / 1e3, bins=30, color="tab:green", alpha=0.85)
+    ax3.set_xlabel("A⊥ (kHz)", fontsize=10)
+    ax3.set_ylabel("스핀 수", fontsize=10)
+    ax3.set_title("A⊥ 분포", fontsize=10)
+    ax3.tick_params(labelsize=8.5)
 
     fig.tight_layout()
     fig.savefig(ASSETS / "delft50_overview.png", dpi=150)
