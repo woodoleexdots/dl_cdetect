@@ -185,6 +185,65 @@ def main():
                "불일치가 아니라 각 방법의 탐색 범위 문제임이 구조적으로 설명됨")
     tf.paragraphs[0].font.size = Pt(11.5)
 
+
+    # ---------------- slide 5: final definitive spin list ----------------
+    s = prs.slides.add_slide(blank)
+    add_title(s, "최종 확정: NV1 / NV2 ¹³C 핵스핀 목록",
+              "값 = (A∥ ± 95% CI, A⊥) kHz · ✅✅ 최고신뢰(전원+앵커) ✅ 확정 ⭕ 신뢰 ⚠ 보류",
+              msg="NV1 14개 + NV2 9개(+1 보류) — 물리·통계·교차검증 전부 통과, 수동 분석 7개 전원 재발견")
+
+    def spin_table(x, w, title, cells, n_rows):
+        tb = s.shapes.add_textbox(Inches(x), Inches(1.5), Inches(w), Inches(0.3))
+        tb.text_frame.text = title
+        tb.text_frame.paragraphs[0].font.size = Pt(13)
+        tb.text_frame.paragraphs[0].font.bold = True
+        shape = s.shapes.add_table(n_rows, 1, Inches(x), Inches(1.85),
+                                   Inches(w), Inches(0.42 * n_rows))
+        t = shape.table
+        for i in range(n_rows):
+            c = t.cell(i, 0)
+            c.text = cells[i] if i < len(cells) else ""
+            c.text_frame.paragraphs[0].font.size = Pt(10.5)
+
+    nv1_cells = [
+        "(−87.9 ±0.9, 18.3) ✅", "(−18.8 ±1.2, 15.5) ✅",
+        "(−11.5 ±1.7, 13.9) ✅", "(−5.1 ±0.6, 22.5) ✅✅",
+        "(+0.6 ±1.5, 17.1) ✅", "(+4.0 ±0.7, 26.2) ✅",
+        "(+8.4 ±0.6, 27.8) ✅✅",
+    ]
+    nv1_cells2 = [
+        "(+14.2 ±1.0, 21.7) ✅", "(+24.3 ±1.5, 20.1) ✅",
+        "(+39.0 ±2.0, 28.2) ✅✅", "(+48.0 ±2.6, 25.1) ✅",
+        "(+65.6 ±1.0, 27.6) ✅", "(+91.9 ±0.7, 32.6) ✅",
+        "(+114.4 ±1.7, 23.9) ✅",
+    ]
+    nv2_cells = [
+        "(+346.9, 261) ✅✅", "(−151.2, 95) ✅", "(−58.9, 182) ✅",
+        "(−45.9, 50) ⭕", "(−38.9, 67) ✅✅", "(−12.6, 42) ✅",
+        "(−2.7, 37) ⭕", "(+51.7, 91) ✅", "(+55.9, 55) ✅",
+        "(+430.7, 58) ⚠ 보류",
+    ]
+    spin_table(0.35, 3.1, "NV1 — 14개 (1/2)", nv1_cells, 7)
+    spin_table(3.60, 3.1, "NV1 — 14개 (2/2)", nv1_cells2, 7)
+    spin_table(7.35, 3.1, "NV2 — 9개 + 보류 1", nv2_cells[:5], 5)
+    spin_table(10.60, 2.5, " ", nv2_cells[5:], 5)
+
+    tb = s.shapes.add_textbox(Inches(0.4), Inches(5.15), Inches(12.5), Inches(2.1))
+    tf = tb.text_frame
+    tf.word_wrap = True
+    notes = [
+        "• 개수 근거 — BIC 최소 k*=14, RJMCMC 사후 최빈 15와 정합 · 스핀 추가 벌점 통과분만 채택",
+        "• 통계적 실체 — 14개 전부 95% CI 상호 비겹침 (부트스트랩 60회)",
+        "• 물리 재현 — 단일 목록으로 N=8/16/20 세 측정 동시 설명, RMSE 0.088/0.116/0.176 (노이즈 바닥 도달)",
+        "• 외부 정합 — 수동 분석 앵커 NV1 4/4 · NV2 3/3 회수 (부호는 m_s 브랜치 관례 차이)",
+        "• NV2 주의 — 단일 채널(CPMG-16)이라 A⊥는 대표값 · (+430.7) 축퇴 잔재 가능, CPMG-8/20 추가 측정 시 판정",
+        "• 목록 외 후보 — NV1 A≈−32±3 (3계열 지지, 최종 피팅 미포함)",
+    ]
+    for i, n in enumerate(notes):
+        pgh = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
+        pgh.text = n
+        pgh.font.size = Pt(11.5)
+
     out = ROOT / "results" / "NV_C13_summary_3slides.pptx"
     prs.save(out)
     print("saved ->", out)
