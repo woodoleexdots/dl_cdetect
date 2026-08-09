@@ -98,6 +98,52 @@ def main():
                           "⚠ = 단일 채널 축퇴로 보류 · 2021 방법 수치는 core-pipeline 재현 기준(원방법 하한)")
     tb.text_frame.paragraphs[0].font.size = Pt(10)
 
+
+    # ---------------- slide: head-to-head 2021 vs ours ----------------
+    s = prs.slides.add_slide(blank)
+    add_title(s, "정면 비교: 2021 방법 vs 우리 방법",
+              "나머지 모델들(CNN뱅크·SpinDETR·PF단독·DE·RJMCMC)은 이 결론을 떠받치는 ablation·베이스라인",
+              msg="같은 실측 스핀 환경에서 채점한 결과 — 저온 ×2.2, 상온 ×1.5, 오차주입 ×1.7")
+
+    hh = ["", "2021 방법 (core-pipeline 재현)", "우리 방법 (PF→RJMCMC 하이브리드 v2)"]
+    rows2 = [
+        ("구조", "윈도우별 독립 MLP 61개\n+ 별도 디노이저", "신경망 탐지(윈도우 간 어텐션)\n+ 영역 제약 물리 피팅 + BIC"),
+        ("출력", "고확률 영역 (A 위치 후보)\nB·개수는 별도 단계 필요", "최종 스핀 목록 {(A∥, A⊥)} × k*\n개수 자동 · 95% CI 제공"),
+        ("실측 50-스핀 검증 (F1)", "저온 0.38 · 상온 0.37 · 오차주입 0.35", "저온 0.84 · 상온 0.57 · 오차주입 0.61"),
+        ("오탐 (precision)", "0.55–1.00 (상온에서 붕괴)", "0.87–1.00 (오차주입에도 0.87)"),
+        ("실데이터 NV1", "고확률 영역 2곳 + 피크 3개\n(개별 스핀 분해 불가)", "14개 스핀 확정 (CI 포함)\n3개 측정 동시 재현 RMSE 0.09–0.18"),
+        ("전제 조건", "저온·고SNR·N=32/256 장시간 측정", "상온·700점·N≤20에서 작동"),
+    ]
+    shape = s.shapes.add_table(len(rows2) + 1, 3, Inches(0.4), Inches(1.6),
+                               Inches(12.55), Inches(5.4))
+    t = shape.table
+    t.columns[0].width = Inches(2.2)
+    t.columns[1].width = Inches(4.9)
+    t.columns[2].width = Inches(5.45)
+    for j, h in enumerate(hh):
+        c = t.cell(0, j)
+        c.text = h
+        c.text_frame.paragraphs[0].font.size = Pt(13)
+        c.text_frame.paragraphs[0].font.bold = True
+        if j == 1:
+            c.fill.solid(); c.fill.fore_color.rgb = RGBColor.from_string("F2D5CC")
+        if j == 2:
+            c.fill.solid(); c.fill.fore_color.rgb = RGBColor.from_string("D9EAD3")
+    for i, row in enumerate(rows2):
+        for j, val in enumerate(row):
+            c = t.cell(i + 1, j)
+            tf = c.text_frame
+            for li, line in enumerate(val.split("\n")):
+                pgh = tf.paragraphs[0] if li == 0 else tf.add_paragraph()
+                pgh.text = line
+                pgh.font.size = Pt(11)
+                if j == 0 and li == 0:
+                    pgh.font.bold = True
+    tb = s.shapes.add_textbox(Inches(0.4), Inches(7.08), Inches(12.5), Inches(0.38))
+    tf = tb.text_frame
+    tf.text = ("• 공정성 — 2021 수치는 core-pipeline 재현 기준(원방법 하한) · 두 방법 모두 같은 forward model·같은 채점 규칙")
+    tf.paragraphs[0].font.size = Pt(10.5)
+
     # ---------------- slide 2: 50-spin validation ----------------
     s = prs.slides.add_slide(blank)
     add_title(s, "요약 ②: 공개 실측 50-스핀 배스로 검증",
